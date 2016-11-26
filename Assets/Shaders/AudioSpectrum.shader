@@ -1,4 +1,4 @@
-﻿Shader "Custom/AudioBasedShader"
+﻿Shader "Custom/AudioSpectrum"
 {
 	Properties
 	{
@@ -44,20 +44,22 @@
 			fixed4 frag(v2f i) : SV_Target
 			{
 				float2 pos = i.vertex.xy / _ScreenParams.xy;
-				pos.y = -1. + 2. * pos.y;
+				/*pos.y = -1. + 2. * pos.y;*/
 				pos.y = -pos.y;
-				pos.y += 0.5f;
+				pos.y += 1.0f;
 
 				float fft = tex2D(_BackgroundTex, float2(pos.x, 0.25)).x;
 				float wave = tex2D(_ForegroundTex, float2(pos.x, 0.75)).x;
 
-				float3 col = float3(fft, 4.0 * fft * (1.0 - fft), 1.0 - fft) * fft;
-				
-				pos.x *= 100.;
-				col *= step(frac(pos.x), .8);
-				pos.x /= 100.;
+				float3 orange = float3(1., 0.647, 0.);
+				float3 blue = float3(0.008, 0.031, 0.341);
 
-				col += 1. - smoothstep(0.0, 0.1, abs(wave - pos.y));
+				float intensity = step(pos.y, fft);
+				float3 col = float3(intensity, intensity, intensity);// *float3(fft, fft, 3. * fft) * fft;
+
+				/*pos.x *= 128.;
+				col *= step(frac(pos.x), .8);
+				pos.x /= 128.;*/
 
 				return float4(col, 1.0);
 			}

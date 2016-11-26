@@ -1,19 +1,23 @@
 ﻿using UnityEngine;
 
-[RequireComponent(typeof(AudioSource), typeof(Renderer))]
-public class AudioBasedShader : MonoBehaviour {
+public class WaveformImageEffect : MonoBehaviour {
+	public Shader shader;
+
 	private int backgroundSampleLength = 64;
 	private int foregroundSampleLength = 512;
 	private AudioSource audioSource;
-	private Renderer rend;
 	private float[] backgroundSamples;
 	private float[] foregroundSamples;
 	private Texture2D backgroundTexture;
 	private Texture2D foregroundTexture;
+	private Material material;
 
-	void Start() {
+	// Creates a private material used to the effect
+	void Awake() {
 		audioSource = GetComponent<AudioSource>();
-		rend = GetComponent<Renderer>();
+		material = new Material(shader);
+
+		audioSource = GetComponent<AudioSource>();
 
 		backgroundSamples = new float[backgroundSampleLength];
 		foregroundSamples = new float[foregroundSampleLength];
@@ -21,16 +25,15 @@ public class AudioBasedShader : MonoBehaviour {
 		backgroundTexture = new Texture2D(backgroundSampleLength, 1, TextureFormat.RGBA32, false);
 		foregroundTexture = new Texture2D(foregroundSampleLength, 1, TextureFormat.RGBA32, false);
 
-		rend.material.SetTexture("_BackgroundTex", backgroundTexture);
-		rend.material.SetTexture("_ForegroundTex", foregroundTexture);
+		material.SetTexture("_BackgroundTex", backgroundTexture);
+		material.SetTexture("_ForegroundTex", foregroundTexture);
 
 		audioSource.Play();
 	}
 
-	void Update() {
-		//AudioListener.GetSpectrumData(backgroundSamples, 0, FFTWindow.Triangle);
-
-		audioSource.GetOutputData(backgroundSamples, 0);
+	// Postprocess the image
+	void OnRenderImage(RenderTexture source, RenderTexture destination) {
+		AudioListener.GetOutputData(backgroundSamples, 0);
 		for (int i = 0; i < backgroundTexture.width; i++) {
 			float db = backgroundSamples[i];
 			Color c = new Color(db, db, db);
@@ -45,5 +48,7 @@ public class AudioBasedShader : MonoBehaviour {
 			foregroundTexture.SetPixel(i, 1, c);
 		}
 		foregroundTexture.Apply();
+
+		Graphics.Blit(source, destination, material);
 	}
 }
